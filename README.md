@@ -1,4 +1,4 @@
-# flugo_chat
+# ChatFlow
 
 A new Flutter project.
 

@@ -74,6 +74,7 @@ class ChatViewModel extends ChangeNotifier {
       currentUserName,
       replyToMessageId: _replyingTo?.id,
       replyToSenderName: _replyingTo?.senderName,
+      replyToSenderId: _replyingTo?.senderId,
       replyToText: _replyingTo?.text
     );
 

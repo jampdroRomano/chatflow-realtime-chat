@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import '../../../viewmodels/chat_viewmodel.dart';
-import '../../../models/message_model.dart';
-import '../../widgets/chat/chat_app_bar.dart';
-import '../../widgets/chat/message_bubble.dart';
-import '../../widgets/chat/date_separator.dart';
-import '../../widgets/chat/chat_input_field.dart'; 
+
+import '../../viewmodels/chat_viewmodel.dart';
+import '../../models/message_model.dart';
+import '../widgets/chat/chat_app_bar.dart';
+import '../widgets/chat/message_bubble.dart';
+import '../widgets/chat/date_separator.dart';
+import '../widgets/chat/chat_input_field.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -25,12 +26,20 @@ class _ChatScreenState extends State<ChatScreen> {
     initializeDateFormatting('pt_BR', null);
   }
 
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser!;
-    
-    // Cor de fundo levemente cinza/bege para destacar o input branco
-    final backgroundColor = const Color(0xFFE5E5E5); 
+    final backgroundColor = const Color(0xFFE5E5E5);
 
     return ChangeNotifierProvider(
       create: (_) => ChatViewModel(
@@ -40,42 +49,49 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Consumer<ChatViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
-            backgroundColor: backgroundColor, 
+            backgroundColor: backgroundColor,
             appBar: const ChatAppBar(),
             body: Column(
               children: [
-                // LISTA DE MENSAGENS
                 Expanded(
                   child: StreamBuilder<List<ChatMessage>>(
                     stream: viewModel.messagesStream,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                       
-                      final messages = snapshot.data!;
+                      final messages = snapshot.data!.reversed.toList();
                       
                       return ListView.builder(
                         controller: _scrollController,
+                        reverse: true,
                         itemCount: messages.length,
-                        padding: const EdgeInsets.only(bottom: 10), // Espaço pro input não cobrir
+                        padding: const EdgeInsets.only(bottom: 10, top: 10),
                         itemBuilder: (context, index) {
                           final message = messages[index];
                           final isMe = message.senderId == currentUser.uid;
                           
-                          // Lógica da Perninha
+                          // Lógica da Perninha (Com Chaves {})
                           bool showTail = true;
                           if (index > 0) {
-                             final prevMessage = messages[index - 1];
-                             if (prevMessage.senderId == message.senderId) showTail = false;
+                             final newerMessage = messages[index - 1];
+                             if (newerMessage.senderId == message.senderId) {
+                               showTail = false;
+                             }
                           }
 
-                          // Lógica da Data
+                          // Lógica da Data (Com Chaves {})
                           bool showDate = false;
-                          if (index == 0) {
+                          if (index == messages.length - 1) {
                             showDate = true;
                           } else {
-                            final prevDate = messages[index - 1].timestamp;
                             final currDate = message.timestamp;
-                            if (prevDate.day != currDate.day) showDate = true;
+                            final olderDate = messages[index + 1].timestamp;
+                            
+                            if (currDate.day != olderDate.day || 
+                                currDate.month != olderDate.month || 
+                                currDate.year != olderDate.year) {
+                              showDate = true;
+                            }
                           }
 
                           final isSelected = viewModel.isMessageSelected(message.id);
@@ -83,14 +99,18 @@ class _ChatScreenState extends State<ChatScreen> {
                           return Column(
                             children: [
                               if (showDate) DateSeparator(date: message.timestamp),
+                              
                               MessageBubble(
                                 message: message,
+                                currentUserId: currentUser.uid, // <--- Passando o ID aqui
                                 isMe: isMe,
                                 showTail: showTail,
                                 isSelected: isSelected,
                                 onLongPress: () => viewModel.toggleSelection(message),
                                 onTap: () {
-                                  if (viewModel.isSelectionMode) viewModel.toggleSelection(message);
+                                  if (viewModel.isSelectionMode) {
+                                    viewModel.toggleSelection(message);
+                                  }
                                 },
                                 onSwipeReply: () => viewModel.setReplyingTo(message),
                               ),
@@ -102,7 +122,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
 
-                // ÁREA DE RESPOSTA (PREVIEW)
+                // Preview de Resposta
                 if (viewModel.replyingTo != null)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -114,17 +134,26 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.reply, color: Colors.blue),
+                        Container(
+                          width: 4,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Respondendo a ${viewModel.replyingTo!.senderName}", 
+                                viewModel.replyingTo!.senderId == currentUser.uid 
+                                    ? "Você" 
+                                    : viewModel.replyingTo!.senderName, 
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold, 
-                                  fontSize: 12, 
+                                  fontSize: 14,
                                   color: Theme.of(context).colorScheme.primary
                                 )
                               ),
@@ -142,11 +171,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
 
-                // NOVO INPUT FLUTUANTE
-                const ChatInput(), // <--- Olha como ficou limpo!
+                ChatInput(
+                  onSendMessageSuccess: _scrollToBottom,
+                ),
                 
-                // Espaço extra se for iOS (SafeArea)
-                SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 20 : 0),
+                SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 10 : 0),
               ],
             ),
           );

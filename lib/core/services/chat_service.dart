@@ -4,8 +4,18 @@ import '../../models/message_model.dart';
 class ChatService {
   final DatabaseReference _messagesRef = FirebaseDatabase.instance.ref().child('messages');
 
-
-  Future<void> sendMessage(String text, String userId, String userName, {String? replyToMessageId, String? replyToSenderName, String? replyToText}) async {
+  // Atualize a assinatura do método para aceitar o novo ID
+  Future<void> sendMessage(
+    String text, 
+    String userId, 
+    String userName, 
+    {
+      String? replyToMessageId, 
+      String? replyToSenderName, 
+      String? replyToSenderId, // <--- Novo parâmetro
+      String? replyToText
+    }
+  ) async {
     await _messagesRef.push().set({
       'text': text,
       'senderId': userId,
@@ -13,11 +23,12 @@ class ChatService {
       'timestamp': DateTime.now().toIso8601String(),
       'replyToMessageId': replyToMessageId,
       'replyToSenderName': replyToSenderName,
+      'replyToSenderId': replyToSenderId, // <--- Salva no banco
       'replyToText': replyToText,
       'isDeleted': false,
     });
   }
-
+// ... resto do arquivo (getMessagesStream e markMessageAsDeleted continuam iguais)
   Stream<List<ChatMessage>> getMessagesStream() {
     return _messagesRef.onValue.map((event) {
       final List<ChatMessage> messages = [];

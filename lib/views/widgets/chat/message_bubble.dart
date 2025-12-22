@@ -4,6 +4,7 @@ import '../../../models/message_model.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
+  final String currentUserId; // <--- Novo campo necessário para saber quem é "Você"
   final bool isMe;
   final bool showTail;
   final bool isSelected;
@@ -14,6 +15,7 @@ class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
     required this.message,
+    required this.currentUserId, // <--- Recebe aqui
     required this.isMe,
     required this.showTail,
     required this.isSelected,
@@ -26,13 +28,11 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    // Cores Normais
+    // Cores
     final normalColor = isMe ? theme.colorScheme.primary : theme.colorScheme.secondary;
     final bubbleColor = isSelected ? normalColor.withValues(alpha: 0.7) : normalColor;
-    // Cor de Fundo da Row (Highlight da seleção)
     final rowColor = isSelected ? theme.colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent;
     final textColor = isMe ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
-    
     final timeColor = isMe 
         ? theme.colorScheme.onPrimary.withValues(alpha: 0.7) 
         : theme.colorScheme.onSurface.withValues(alpha: 0.6);
@@ -40,7 +40,7 @@ class MessageBubble extends StatelessWidget {
     // --- MENSAGEM APAGADA ---
     if (message.isDeleted) {
       return Container(
-        color: Colors.transparent, 
+        color: Colors.transparent,
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
@@ -57,11 +57,7 @@ class MessageBubble extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 "Mensagem apagada",
-                style: TextStyle(
-                  fontStyle: FontStyle.italic,
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey.shade600, fontSize: 14),
               ),
             ],
           ),
@@ -70,8 +66,14 @@ class MessageBubble extends StatelessWidget {
     }
 
     // --- MENSAGEM NORMAL ---
-    
     final bool isShortMessage = message.text.length < 25 && !message.text.contains('\n');
+
+    // Lógica do Nome na Resposta (Aqui estava o erro)
+    // Se o ID de quem mandou a mensagem original for o MEU ID, exibe "Você".
+    String replyName = message.replyToSenderName ?? 'Desconhecido';
+    if (message.replyToSenderId == currentUserId) {
+      replyName = 'Você';
+    }
 
     return Container(
       color: rowColor,
@@ -114,7 +116,6 @@ class MessageBubble extends StatelessWidget {
                         bottomLeft: Radius.circular(isMe ? 16 : (showTail ? 0 : 16)),
                         bottomRight: Radius.circular(isMe ? (showTail ? 0 : 16) : 16),
                       ),
-                      border: null, 
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -130,7 +131,7 @@ class MessageBubble extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                               border: Border(
                                 left: BorderSide(
-                                  color: isMe ? Colors.white : theme.primaryColor, 
+                                  color: isMe ? Colors.white : theme.colorScheme.primary, 
                                   width: 4
                                 ),
                               ),
@@ -139,7 +140,7 @@ class MessageBubble extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  message.replyToSenderName ?? 'Desconhecido',
+                                  replyName, // CORREÇÃO: Usando a variável tratada
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -160,7 +161,7 @@ class MessageBubble extends StatelessWidget {
                             ),
                           ),
 
-                        // NOME (GRUPOS)
+                        // NOME EM GRUPOS
                         if (!isMe && showTail)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4),

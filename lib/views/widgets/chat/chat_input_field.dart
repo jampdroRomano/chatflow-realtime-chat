@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../viewmodels/chat_viewmodel.dart';
-import '../../../core/theme/app_theme.dart'; 
+import '../../../core/theme/app_theme.dart';
 
 class ChatInput extends StatefulWidget {
-  const ChatInput({super.key});
+  // Callback novo: Avisa a tela pai que o envio rolou
+  final VoidCallback onSendMessageSuccess; 
+
+  const ChatInput({
+    super.key, 
+    required this.onSendMessageSuccess, // Obrigatório agora
+  });
 
   @override
   State<ChatInput> createState() => _ChatInputState();
@@ -22,7 +28,6 @@ class _ChatInputState extends State<ChatInput> {
       padding: const EdgeInsets.all(8.0), 
       child: Row(
         children: [
-          // CAMPO DE TEXTO
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -51,7 +56,6 @@ class _ChatInputState extends State<ChatInput> {
 
           const SizedBox(width: 8), 
 
-          // 2. BOTÃO DE ENVIAR
           Container(
             decoration: BoxDecoration(
               color: theme.colorScheme.primary,
@@ -68,8 +72,13 @@ class _ChatInputState extends State<ChatInput> {
             child: IconButton(
               icon: const Icon(Icons.send, color: Colors.white),
               onPressed: () {
-                viewModel.sendMessage(_textController.text);
-                _textController.clear();
+                if (_textController.text.trim().isNotEmpty) {
+                  viewModel.sendMessage(_textController.text);
+                  _textController.clear();
+                  
+                  // AVISA A TELA PARA ROLAR!
+                  widget.onSendMessageSuccess(); 
+                }
               },
             ),
           ),

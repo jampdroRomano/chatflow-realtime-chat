@@ -6,8 +6,9 @@ class ChatMessage {
   final DateTime timestamp;
   final String? replyToMessageId;
   final String? replyToSenderName;
+  final String? replyToSenderId; // <--- NOVO CAMPO FUNDAMENTAL
   final String? replyToText;
-  final bool isDeleted; 
+  final bool isDeleted;
 
   ChatMessage({
     required this.id,
@@ -17,8 +18,9 @@ class ChatMessage {
     required this.timestamp,
     this.replyToMessageId,
     this.replyToSenderName,
+    this.replyToSenderId, // <--- Adicione aqui
     this.replyToText,
-    this.isDeleted = false, 
+    this.isDeleted = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,8 +31,9 @@ class ChatMessage {
       'timestamp': timestamp.toIso8601String(),
       'replyToMessageId': replyToMessageId,
       'replyToSenderName': replyToSenderName,
+      'replyToSenderId': replyToSenderId, // <--- Salva no banco
       'replyToText': replyToText,
-      'isDeleted': isDeleted, 
+      'isDeleted': isDeleted,
     };
   }
 
@@ -43,6 +46,7 @@ class ChatMessage {
       timestamp: DateTime.tryParse(map['timestamp'] ?? '') ?? DateTime.now(),
       replyToMessageId: map['replyToMessageId'],
       replyToSenderName: map['replyToSenderName'],
+      replyToSenderId: map['replyToSenderId'], // <--- Lê do banco
       replyToText: map['replyToText'],
       isDeleted: map['isDeleted'] ?? false,
     );

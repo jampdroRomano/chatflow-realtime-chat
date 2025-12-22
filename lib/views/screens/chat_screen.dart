@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
 import '../../viewmodels/chat_viewmodel.dart';
-import '../../models/message_model.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/message_bubble.dart';
 import '../widgets/chat/date_separator.dart';
 import '../widgets/chat/chat_input_field.dart';
+import '../widgets/chat/reply_preview_bar.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -45,6 +44,7 @@ class _ChatScreenState extends State<ChatScreen> {
       create: (_) => ChatViewModel(
         currentUserId: currentUser.uid,
         currentUserName: currentUser.displayName ?? currentUser.email!.split('@')[0],
+        currentUserEmail: currentUser.email ?? '', 
       ),
       child: Consumer<ChatViewModel>(
         builder: (context, viewModel, child) {
@@ -54,57 +54,34 @@ class _ChatScreenState extends State<ChatScreen> {
             body: Column(
               children: [
                 Expanded(
-                  child: StreamBuilder<List<ChatMessage>>(
-                    stream: viewModel.messagesStream,
+                  child: StreamBuilder<List<ChatUiItem>>(
+                    stream: viewModel.messagesUiStream,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                       
-                      final messages = snapshot.data!.reversed.toList();
+                      final uiItems = snapshot.data!;
                       
                       return ListView.builder(
                         controller: _scrollController,
                         reverse: true,
-                        itemCount: messages.length,
+                        itemCount: uiItems.length,
                         padding: const EdgeInsets.only(bottom: 10, top: 10),
                         itemBuilder: (context, index) {
-                          final message = messages[index];
+                          final item = uiItems[index];
+                          final message = item.message;
                           final isMe = message.senderId == currentUser.uid;
-                          
-                          // Lógica da Perninha (Com Chaves {})
-                          bool showTail = true;
-                          if (index > 0) {
-                             final newerMessage = messages[index - 1];
-                             if (newerMessage.senderId == message.senderId) {
-                               showTail = false;
-                             }
-                          }
-
-                          // Lógica da Data (Com Chaves {})
-                          bool showDate = false;
-                          if (index == messages.length - 1) {
-                            showDate = true;
-                          } else {
-                            final currDate = message.timestamp;
-                            final olderDate = messages[index + 1].timestamp;
-                            
-                            if (currDate.day != olderDate.day || 
-                                currDate.month != olderDate.month || 
-                                currDate.year != olderDate.year) {
-                              showDate = true;
-                            }
-                          }
-
                           final isSelected = viewModel.isMessageSelected(message.id);
 
                           return Column(
                             children: [
-                              if (showDate) DateSeparator(date: message.timestamp),
+                              if (item.showDate) 
+                                DateSeparator(date: message.timestamp),
                               
                               MessageBubble(
                                 message: message,
-                                currentUserId: currentUser.uid, // <--- Passando o ID aqui
+                                currentUserId: currentUser.uid,
                                 isMe: isMe,
-                                showTail: showTail,
+                                showTail: item.showTail,
                                 isSelected: isSelected,
                                 onLongPress: () => viewModel.toggleSelection(message),
                                 onTap: () {
@@ -122,53 +99,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
 
-                // Preview de Resposta
                 if (viewModel.replyingTo != null)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                viewModel.replyingTo!.senderId == currentUser.uid 
-                                    ? "Você" 
-                                    : viewModel.replyingTo!.senderName, 
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold, 
-                                  fontSize: 14,
-                                  color: Theme.of(context).colorScheme.primary
-                                )
-                              ),
-                              Text(
-                                viewModel.replyingTo!.text, 
-                                maxLines: 1, 
-                                overflow: TextOverflow.ellipsis, 
-                                style: const TextStyle(color: Colors.grey)
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(icon: const Icon(Icons.close), onPressed: viewModel.cancelReply)
-                      ],
-                    ),
+                  ReplyPreviewBar(
+                    replyingTo: viewModel.replyingTo!,
+                    currentUserId: currentUser.uid,
+                    onCancel: viewModel.cancelReply,
                   ),
 
                 ChatInput(

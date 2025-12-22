@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 import '../../../viewmodels/chat_viewmodel.dart';
-import '../../../core/theme/app_theme.dart'; // <--- Import do Tema
+import '../../../core/theme/app_theme.dart';
 
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ChatAppBar({super.key});
@@ -13,7 +13,6 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     final authVM = Provider.of<AuthViewModel>(context, listen: false);
 
     if (chatVM.isSelectionMode) {
-      // A AppBar vai herdar tudo (Azul/Branco) automaticamente.
       return Theme(
         data: AppTheme.selectionTheme, 
         child: AppBar(
@@ -43,12 +42,11 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
       );
     }
 
-    // MODO NORMAL (Usa o tema padrão do main.dart)
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("ChatFlow"), // Estilo vem do lightTheme padrão
+          const Text("ChatFlow"),
           Text(
             "${chatVM.onlineUsersCount} online",
             style: const TextStyle(fontSize: 12, color: Colors.green),
@@ -57,7 +55,6 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         PopupMenuButton<String>(
-          // O ícone padrão já vem preto do tema lightTheme
           onSelected: (value) {
             if (value == 'logout') authVM.logout();
           },
@@ -68,7 +65,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(chatVM.currentUserName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const Text("usuario@email.com", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(chatVM.currentUserEmail, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                   const Divider(),
                 ],
               ),

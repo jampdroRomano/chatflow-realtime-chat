@@ -2,42 +2,88 @@ import 'package:flutter/foundation.dart';
 import '../core/services/chat_service.dart';
 import '../models/message_model.dart';
 
+class ChatUiItem {
+  final ChatMessage message;
+  final bool showTail;
+  final bool showDate;
+
+  ChatUiItem({
+    required this.message,
+    required this.showTail,
+    required this.showDate,
+  });
+}
+
 class ChatViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   final String currentUserId;
   final String currentUserName;
+  final String currentUserEmail; 
+
   final Set<String> _selectedMessageIds = {};
   final List<ChatMessage> _selectedMessages = []; 
-
+  
   ChatMessage? _replyingTo;
 
-  ChatViewModel({required this.currentUserId, required this.currentUserName});
+  ChatViewModel({
+    required this.currentUserId, 
+    required this.currentUserName,
+    required this.currentUserEmail, 
+  });
 
-  Stream<List<ChatMessage>> get messagesStream => _chatService.getMessagesStream();
+  Stream<List<ChatUiItem>> get messagesUiStream {
+    return _chatService.getMessagesStream().map((rawMessages) {
+      final messages = rawMessages.reversed.toList();
+      
+      return List.generate(messages.length, (index) {
+        final message = messages[index];
+        
+        bool showTail = true;
+        if (index < messages.length - 1) {
+           final olderMessage = messages[index + 1];
+           if (olderMessage.senderId == message.senderId) {
+             showTail = false;
+           }
+        }
 
-  // --- GETTERS (AS PORTAS DE ACESSO) ---
+        bool showDate = false;
+        if (index == messages.length - 1) {
+          showDate = true;
+        } else {
+          final currDate = message.timestamp;
+          final olderDate = messages[index + 1].timestamp;
+          
+          if (currDate.day != olderDate.day || 
+              currDate.month != olderDate.month || 
+              currDate.year != olderDate.year) {
+            showDate = true;
+          }
+        }
+
+        return ChatUiItem(
+          message: message,
+          showTail: showTail,
+          showDate: showDate,
+        );
+      });
+    });
+  }
+
+  // Getters
   bool get isSelectionMode => _selectedMessageIds.isNotEmpty;
   int get selectedCount => _selectedMessageIds.length;
   ChatMessage? get replyingTo => _replyingTo;
-  
-  // Expondo a lista para a AppBar usar
   List<ChatMessage> get selectedMessages => List.unmodifiable(_selectedMessages);
-  
-  // Expondo o contador de usuários online
-  int get onlineUsersCount => 12; // Mock provisório
+  int get onlineUsersCount => 12;
 
-  // --- REGRAS DE NEGÓCIO ---
   bool get canReply => _selectedMessageIds.length == 1;
-  
   bool get canDelete {
     if (_selectedMessageIds.isEmpty) return false;
-    // Só pode deletar se TODAS as mensagens se forem MINHAS
     return _selectedMessages.every((msg) => msg.senderId == currentUserId);
   }
 
   bool isMessageSelected(String id) => _selectedMessageIds.contains(id);
 
-  // --- AÇÕES ---
   void toggleSelection(ChatMessage message) {
     if (_selectedMessageIds.contains(message.id)) {
       _selectedMessageIds.remove(message.id);
@@ -84,11 +130,9 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> deleteSelectedMessages() async {
     if (!canDelete) return;
-
     for (var msg in _selectedMessages) {
       await _chatService.markMessageAsDeleted(msg.id);
     }
-    
     clearSelection();
   }
 }

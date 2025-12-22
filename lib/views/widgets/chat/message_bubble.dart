@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../models/message_model.dart';
+import 'bubbles/deleted_message_bubble.dart';
+import 'bubbles/message_content.dart';
+import 'bubbles/reply_preview_in_bubble.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
-  final String currentUserId; // <--- Novo campo necessário para saber quem é "Você"
+  final String currentUserId;
   final bool isMe;
   final bool showTail;
   final bool isSelected;
@@ -15,7 +17,7 @@ class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
     required this.message,
-    required this.currentUserId, // <--- Recebe aqui
+    required this.currentUserId,
     required this.isMe,
     required this.showTail,
     required this.isSelected,
@@ -26,9 +28,12 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.isDeleted) {
+      return DeletedMessageBubble(isMe: isMe);
+    }
+
     final theme = Theme.of(context);
     
-    // Cores
     final normalColor = isMe ? theme.colorScheme.primary : theme.colorScheme.secondary;
     final bubbleColor = isSelected ? normalColor.withValues(alpha: 0.7) : normalColor;
     final rowColor = isSelected ? theme.colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent;
@@ -37,49 +42,16 @@ class MessageBubble extends StatelessWidget {
         ? theme.colorScheme.onPrimary.withValues(alpha: 0.7) 
         : theme.colorScheme.onSurface.withValues(alpha: 0.6);
 
-    // --- MENSAGEM APAGADA ---
-    if (message.isDeleted) {
-      return Container(
-        color: Colors.transparent,
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.block, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 8),
-              Text(
-                "Mensagem apagada",
-                style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey.shade600, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // --- MENSAGEM NORMAL ---
     final bool isShortMessage = message.text.length < 25 && !message.text.contains('\n');
-
-    // Lógica do Nome na Resposta (Aqui estava o erro)
-    // Se o ID de quem mandou a mensagem original for o MEU ID, exibe "Você".
-    String replyName = message.replyToSenderName ?? 'Desconhecido';
-    if (message.replyToSenderId == currentUserId) {
-      replyName = 'Você';
-    }
 
     return Container(
       color: rowColor,
       child: Dismissible(
         key: Key(message.id),
         direction: DismissDirection.startToEnd,
+        dismissThresholds: const {
+          DismissDirection.startToEnd: 0.15,
+        },
         confirmDismiss: (direction) async {
           onSwipeReply();
           return false;
@@ -90,6 +62,7 @@ class MessageBubble extends StatelessWidget {
           child: Icon(Icons.reply, color: theme.disabledColor),
         ),
         child: GestureDetector(
+          behavior: HitTestBehavior.translucent, 
           onLongPress: onLongPress,
           onTap: onTap,
           child: Align(
@@ -111,57 +84,23 @@ class MessageBubble extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: bubbleColor,
                       borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: Radius.circular(isMe ? 16 : (showTail ? 0 : 16)),
-                        bottomRight: Radius.circular(isMe ? (showTail ? 0 : 16) : 16),
+                        topLeft: Radius.circular(!isMe && showTail ? 0 : 16),
+                        topRight: Radius.circular(isMe && showTail ? 0 : 16),
+                        bottomLeft: const Radius.circular(16),
+                        bottomRight: const Radius.circular(16),
                       ),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // RESPOSTA
-                        if (message.replyToText != null)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 6),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border(
-                                left: BorderSide(
-                                  color: isMe ? Colors.white : theme.colorScheme.primary, 
-                                  width: 4
-                                ),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  replyName, // CORREÇÃO: Usando a variável tratada
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    color: textColor.withValues(alpha: 0.9),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  message.replyToText ?? '',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: textColor.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        ReplyPreviewInBubble(
+                          message: message,
+                          isMe: isMe,
+                          textColor: textColor,
+                          barColor: isMe ? Colors.white : theme.colorScheme.primary,
+                        ),
 
-                        // NOME EM GRUPOS
                         if (!isMe && showTail)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4),
@@ -175,50 +114,12 @@ class MessageBubble extends StatelessWidget {
                             ),
                           ),
 
-                        // TEXTO + HORA
-                        if (isShortMessage)
-                          Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  message.text,
-                                  style: TextStyle(color: textColor, fontSize: 16),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                DateFormat('HH:mm').format(message.timestamp),
-                                style: TextStyle(
-                                  color: timeColor,
-                                  fontSize: 11,
-                                  height: 1.5
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          Stack(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: Text(
-                                  message.text,
-                                  style: TextStyle(color: textColor, fontSize: 16),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Text(
-                                  DateFormat('HH:mm').format(message.timestamp),
-                                  style: TextStyle(color: timeColor, fontSize: 11),
-                                ),
-                              ),
-                            ],
-                          ),
+                        MessageContent(
+                          message: message,
+                          textColor: textColor,
+                          timeColor: timeColor,
+                          isShortMessage: isShortMessage,
+                        ),
                       ],
                     ),
                   ),

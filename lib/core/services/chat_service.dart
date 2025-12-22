@@ -2,14 +2,26 @@ import 'package:firebase_database/firebase_database.dart';
 import '../../data/models/message_model.dart';
 
 class ChatService {
-  final DatabaseReference _messagesRef = FirebaseDatabase.instance.ref().child('messages');
+  final DatabaseReference _messagesRef = FirebaseDatabase.instance.ref().child(
+    'messages',
+  );
 
-  Future<void> sendMessage(String text, String userId, String userName) async {
+  Future<void> sendMessage(
+    String text,
+    String userId,
+    String userName, {
+    String? replyToMessageId,
+    String? replyToSenderName,
+    String? replyToText,
+  }) async {
     await _messagesRef.push().set({
       'text': text,
       'senderId': userId,
       'senderName': userName,
       'timestamp': DateTime.now().toIso8601String(),
+      'replyToMessageId': replyToMessageId,
+      'replyToSenderName': replyToSenderName,
+      'replyToText': replyToText,
     });
   }
 

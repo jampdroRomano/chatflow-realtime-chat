@@ -3,7 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'viewmodels/auth_viewmodel.dart';
-import 'views/auth_gate.dart';
+import 'views/screens/auth_gate.dart';
+import 'core/theme/app_theme.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,10 +24,10 @@ class ChatFlowApp extends StatelessWidget {
       child: MaterialApp(
         title: 'ChatFlow',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2196F3)),
-          useMaterial3: true,
-        ),
+        
+        // APLICANDO O TEMA AQUI:
+        theme: AppTheme.lightTheme, 
+        
         home: const AuthGate(),
       ),
     );

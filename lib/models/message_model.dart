@@ -7,6 +7,7 @@ class ChatMessage {
   final String? replyToMessageId;
   final String? replyToSenderName;
   final String? replyToText;
+  final bool isDeleted; 
 
   ChatMessage({
     required this.id,
@@ -17,6 +18,7 @@ class ChatMessage {
     this.replyToMessageId,
     this.replyToSenderName,
     this.replyToText,
+    this.isDeleted = false, 
   });
 
   Map<String, dynamic> toMap() {
@@ -28,6 +30,7 @@ class ChatMessage {
       'replyToMessageId': replyToMessageId,
       'replyToSenderName': replyToSenderName,
       'replyToText': replyToText,
+      'isDeleted': isDeleted, 
     };
   }
 
@@ -37,10 +40,11 @@ class ChatMessage {
       text: map['text'] ?? '',
       senderId: map['senderId'] ?? '',
       senderName: map['senderName'] ?? 'Desconhecido',
-      timestamp: DateTime.parse(map['timestamp']),
+      timestamp: DateTime.tryParse(map['timestamp'] ?? '') ?? DateTime.now(),
       replyToMessageId: map['replyToMessageId'],
       replyToSenderName: map['replyToSenderName'],
       replyToText: map['replyToText'],
+      isDeleted: map['isDeleted'] ?? false,
     );
   }
 }

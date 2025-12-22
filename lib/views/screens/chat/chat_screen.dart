@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/date_symbol_data_local.dart'; 
+import 'package:intl/date_symbol_data_local.dart';
 import '../../../viewmodels/chat_viewmodel.dart';
 import '../../../models/message_model.dart';
 import '../../widgets/chat/chat_app_bar.dart';
 import '../../widgets/chat/message_bubble.dart';
 import '../../widgets/chat/date_separator.dart';
+import '../../widgets/chat/chat_input_field.dart'; 
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -16,7 +17,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -29,7 +29,9 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser!;
     
-    // Injetamos o ViewModel aqui
+    // Cor de fundo levemente cinza/bege para destacar o input branco
+    final backgroundColor = const Color(0xFFE5E5E5); 
+
     return ChangeNotifierProvider(
       create: (_) => ChatViewModel(
         currentUserId: currentUser.uid,
@@ -38,6 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Consumer<ChatViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
+            backgroundColor: backgroundColor, 
             appBar: const ChatAppBar(),
             body: Column(
               children: [
@@ -53,21 +56,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       return ListView.builder(
                         controller: _scrollController,
                         itemCount: messages.length,
+                        padding: const EdgeInsets.only(bottom: 10), // Espaço pro input não cobrir
                         itemBuilder: (context, index) {
                           final message = messages[index];
                           final isMe = message.senderId == currentUser.uid;
                           
-                          // Lógica da "Perninha" (Tail)
-                          // Tem perninha se for o primeiro da sequencia do mesmo usuário
+                          // Lógica da Perninha
                           bool showTail = true;
                           if (index > 0) {
                              final prevMessage = messages[index - 1];
-                             if (prevMessage.senderId == message.senderId) {
-                               showTail = false;
-                             }
+                             if (prevMessage.senderId == message.senderId) showTail = false;
                           }
 
-                          // Lógica da Data (Hoje, Ontem...)
+                          // Lógica da Data
                           bool showDate = false;
                           if (index == 0) {
                             showDate = true;
@@ -77,6 +78,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             if (prevDate.day != currDate.day) showDate = true;
                           }
 
+                          final isSelected = viewModel.isMessageSelected(message.id);
+
                           return Column(
                             children: [
                               if (showDate) DateSeparator(date: message.timestamp),
@@ -84,7 +87,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                 message: message,
                                 isMe: isMe,
                                 showTail: showTail,
-                                onLongPress: () => viewModel.selectMessage(message),
+                                isSelected: isSelected,
+                                onLongPress: () => viewModel.toggleSelection(message),
+                                onTap: () {
+                                  if (viewModel.isSelectionMode) viewModel.toggleSelection(message);
+                                },
                                 onSwipeReply: () => viewModel.setReplyingTo(message),
                               ),
                             ],
@@ -98,8 +105,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 // ÁREA DE RESPOSTA (PREVIEW)
                 if (viewModel.replyingTo != null)
                   Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
                     padding: const EdgeInsets.all(12),
-                    color: Colors.grey.shade100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                    ),
                     child: Row(
                       children: [
                         const Icon(Icons.reply, color: Colors.blue),
@@ -108,8 +120,20 @@ class _ChatScreenState extends State<ChatScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Respondendo a ${viewModel.replyingTo!.senderName}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                              Text(viewModel.replyingTo!.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey)),
+                              Text(
+                                "Respondendo a ${viewModel.replyingTo!.senderName}", 
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold, 
+                                  fontSize: 12, 
+                                  color: Theme.of(context).colorScheme.primary
+                                )
+                              ),
+                              Text(
+                                viewModel.replyingTo!.text, 
+                                maxLines: 1, 
+                                overflow: TextOverflow.ellipsis, 
+                                style: const TextStyle(color: Colors.grey)
+                              ),
                             ],
                           ),
                         ),
@@ -118,48 +142,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
 
-                // CAMPO DE INPUT
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, -2))],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _textController,
-                          decoration: InputDecoration(
-                            hintText: "Digite uma mensagem...",
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                            filled: true,
-                            fillColor: Colors.grey.shade100,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FloatingActionButton(
-                        mini: true,
-                        backgroundColor: const Color(0xFF125DFF),
-                        child: const Icon(Icons.send, color: Colors.white),
-                        onPressed: () {
-                          viewModel.sendMessage(_textController.text);
-                          _textController.clear();
-                          // Scroll pro final
-                          if (_scrollController.hasClients) {
-                             _scrollController.animateTo(
-                               _scrollController.position.maxScrollExtent + 60,
-                               duration: const Duration(milliseconds: 300),
-                               curve: Curves.easeOut,
-                             );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                // NOVO INPUT FLUTUANTE
+                const ChatInput(), // <--- Olha como ficou limpo!
+                
+                // Espaço extra se for iOS (SafeArea)
+                SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 20 : 0),
               ],
             ),
           );

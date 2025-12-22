@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/date_symbol_data_local.dart'; 
-import '../../viewmodels/chat_viewmodel.dart';
-import '../../data/models/message_model.dart';
-import 'components/chat_app_bar.dart';
-import 'components/message_bubble.dart';
-import 'components/date_separator.dart';
+import '../../../viewmodels/chat_viewmodel.dart';
+import '../../../models/message_model.dart';
+import '../../widgets/chat/chat_app_bar.dart';
+import '../../widgets/chat/message_bubble.dart';
+import '../../widgets/chat/date_separator.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});

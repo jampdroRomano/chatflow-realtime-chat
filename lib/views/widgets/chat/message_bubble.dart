@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../data/models/message_model.dart';
+import '../../../models/message_model.dart'; // <--- Import ajustado para a nova estrutura
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
@@ -20,9 +20,21 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isMe ? const Color(0xFF125DFF) : const Color(0xFFF2F2F7);
-    final textColor = isMe ? Colors.white : Colors.black;
-    final timeColor = isMe ? Colors.white70 : Colors.grey;
+    // PUXANDO DO TEMA (Padronização)
+    final theme = Theme.of(context);
+
+    final color = isMe 
+        ? theme.colorScheme.primary 
+        : theme.colorScheme.secondary;
+
+    final textColor = isMe 
+        ? theme.colorScheme.onPrimary 
+        : theme.colorScheme.onSurface;
+
+    // CORREÇÃO: Definindo o timeColor que estava faltando
+    final timeColor = isMe 
+        ? theme.colorScheme.onPrimary.withValues(alpha: 0.7) 
+        : theme.colorScheme.onSurface.withValues(alpha: 0.6);
 
     // LÓGICA DE LAYOUT
     final bool isShortMessage = message.text.length < 25 && !message.text.contains('\n');
@@ -37,7 +49,7 @@ class MessageBubble extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 20),
-        child: const Icon(Icons.reply, color: Colors.grey),
+        child: Icon(Icons.reply, color: theme.disabledColor),
       ),
       child: GestureDetector(
         onLongPress: onLongPress,
@@ -81,7 +93,7 @@ class MessageBubble extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             border: Border(
                               left: BorderSide(
-                                color: isMe ? Colors.white : Colors.blue, 
+                                color: isMe ? Colors.white : theme.primaryColor, 
                                 width: 4
                               ),
                             ),
@@ -111,7 +123,7 @@ class MessageBubble extends StatelessWidget {
                           ),
                         ),
 
-                      // PARTE 2: NOME DO REMETENTE
+                      // NOME DO REMETENTE
                       if (!isMe && showTail)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
@@ -119,7 +131,7 @@ class MessageBubble extends StatelessWidget {
                             message.senderName,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.orange.shade800,
+                              color: Colors.orange.shade800, // Pode parametrizar no tema depois se quiser
                               fontSize: 13,
                             ),
                           ),
@@ -127,7 +139,7 @@ class MessageBubble extends StatelessWidget {
 
                       // TEXTO E HORÁRIO
                       if (isShortMessage)
-                        // LAYOUT INTELIGENTE 
+                        // LAYOUT PARA MENSAGEM CURTA (Row com spaceBetween)
                         Row(
                           mainAxisSize: MainAxisSize.max, 
                           mainAxisAlignment: MainAxisAlignment.spaceBetween, 
@@ -151,7 +163,7 @@ class MessageBubble extends StatelessWidget {
                           ],
                         )
                       else
-                        // LAYOUT PARA MENSAGEM LONGA
+                        // LAYOUT PARA MENSAGEM LONGA (Stack)
                         Stack(
                           children: [
                             Padding(

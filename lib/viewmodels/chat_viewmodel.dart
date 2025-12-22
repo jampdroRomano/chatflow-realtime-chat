@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/services/chat_service.dart';
-import '../data/models/message_model.dart';
+import '../models/message_model.dart'; 
 
 class ChatViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
@@ -40,7 +40,7 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Enviar mensagem (Agora suporta resposta)
+  // Enviar mensagem
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
@@ -54,18 +54,16 @@ class ChatViewModel extends ChangeNotifier {
       replyToText: _replyingTo?.text
     );
 
-    // Limpa o estado
-    debugPrint("Deletar mensagem: ${_selectedMessage!.id}"); 
-      
-      _selectedMessage = null;
-      notifyListeners();
+    // Limpa o estado de resposta
+    _replyingTo = null;
+    notifyListeners();
   }
 
-  // Excluir mensagem (Falta implementar no Service)
+  // Excluir mensagem (Placeholder)
   Future<void> deleteSelectedMessage() async {
     if (_selectedMessage != null) {
-      // await _chatService.deleteMessage(_selectedMessage!.id);
-      print("Deletar mensagem: ${_selectedMessage!.id}"); // Placeholder
+      debugPrint("Deletar mensagem: ${_selectedMessage!.id}"); 
+      
       _selectedMessage = null;
       notifyListeners();
     }

@@ -1,5 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
-import '../../data/models/message_model.dart';
+import '../../models/message_model.dart';
 
 class ChatService {
   final DatabaseReference _messagesRef = FirebaseDatabase.instance.ref().child(

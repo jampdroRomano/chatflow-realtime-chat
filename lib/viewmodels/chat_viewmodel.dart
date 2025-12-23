@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../core/services/chat_service.dart';
+import '../core/utils/chat_ui_transformer.dart';
 import '../models/message_model.dart';
 import 'helpers/chat_selection_manager.dart'; 
 import 'helpers/chat_typing_manager.dart';    
 
-// Movi a ChatUiItem para fora ou mantenha aqui se for pequena
 class ChatUiItem {
   final ChatMessage message;
   final bool showTail;
@@ -19,7 +19,6 @@ class ChatViewModel extends ChangeNotifier {
   final String currentUserName;
   final String currentUserEmail;
 
-  // Composição: Instâncias dos nossos helpers
   late final ChatSelectionManager _selectionManager;
   late final ChatTypingManager _typingManager;
 
@@ -49,15 +48,14 @@ class ChatViewModel extends ChangeNotifier {
       _onlineUsersCount = count;
       notifyListeners();
     });
-    
-    // Inicia o listener de typing
+
     _typingManager.init();
   }
 
   @override
   void dispose() {
     _onlineUsersSubscription?.cancel();
-    _typingManager.dispose(); // O manager limpa os timers dele
+    _typingManager.dispose();
     _chatService.disconnectUser(currentUserId);
     super.dispose();
   }
@@ -102,26 +100,7 @@ class ChatViewModel extends ChangeNotifier {
   // --- LÓGICA DE ENVIO E FLUXO ---
   
   Stream<List<ChatUiItem>> get messagesUiStream {
-    // A lógica visual de datas/balões continua aqui pois é específica da View
-    return _chatService.getMessagesStream().map((rawMessages) {
-      final messages = rawMessages.reversed.toList();
-      return List.generate(messages.length, (index) {
-        final message = messages[index];
-        bool showTail = true;
-        if (index < messages.length - 1) {
-           if (messages[index + 1].senderId == message.senderId) showTail = false;
-        }
-        bool showDate = false;
-        if (index == messages.length - 1) {
-          showDate = true;
-        } else {
-          final curr = message.timestamp;
-          final old = messages[index + 1].timestamp;
-          if (curr.day != old.day || curr.month != old.month || curr.year != old.year) showDate = true;
-        }
-        return ChatUiItem(message: message, showTail: showTail, showDate: showDate);
-      });
-    });
+    return _chatService.getMessagesStream().map(ChatUiTransformer.transformMessages);
   }
 
   Future<void> sendMessage(String text) async {
@@ -140,9 +119,10 @@ class ChatViewModel extends ChangeNotifier {
       replyToText: _selectionManager.replyingTo?.text
     );
 
-    _selectionManager.cancelReply(); // Limpa o reply após enviar
+    _selectionManager.cancelReply(); 
     notifyListeners();
   }
+
 
   Future<void> deleteSelectedMessages() async {
     if (!canDelete) return;

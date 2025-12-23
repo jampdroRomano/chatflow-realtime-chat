@@ -14,6 +14,15 @@ class AuthViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
 
+  bool _isLoginMode = true;
+  bool get isLoginMode => _isLoginMode;
+
+  void toggleAuthMode() {
+    _isLoginMode = !_isLoginMode;
+    clearMessages();
+  }
+
+
   void clearMessages() {
     _errorMessage = null;
     _successMessage = null;

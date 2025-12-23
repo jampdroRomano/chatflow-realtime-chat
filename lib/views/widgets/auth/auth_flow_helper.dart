@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 import '../../../core/utils/app_validators.dart'; 
 import '../common/app_dialog.dart';
+import '../common/dialog_builder.dart';
 
 class AuthFlowHelper {
   
@@ -64,14 +65,13 @@ class AuthFlowHelper {
     // 2. Ação
     await viewModel.register(email, password, name);
 
-    // 3. Feedback Visual (Se o widget ainda existir na tela)
+    // 3. Feedback Visual 
     if (!context.mounted) return;
 
     if (viewModel.successMessage != null) {
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AppDialog(
+      final dialogBuilder = DialogBuilder(context);
+      await dialogBuilder.show(
+        AppDialog(
           type: DialogType.success,
           title: "Conta Criada!",
           description: viewModel.successMessage,
@@ -92,35 +92,10 @@ class AuthFlowHelper {
   }) async {
     FocusScope.of(context).unfocus();
 
-    final recoveryEmailController = TextEditingController();
-    
-    // Mostra Dialog para digitar o e-mail
-    final shouldSend = await showDialog<bool>(
-      context: context,
-      builder: (context) => AppDialog(
-        type: DialogType.info,
-        title: "Recuperar Senha",
-        description: "Digite seu e-mail para receber o link:",
-        mainButtonText: "ENVIAR",
-        secondaryButtonText: "CANCELAR",
-        onMainAction: () => Navigator.pop(context, true),
-        child: TextField(
-          controller: recoveryEmailController,
-          keyboardType: TextInputType.emailAddress,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: "exemplo@email.com",
-            prefixIcon: const Icon(Icons.email_outlined),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-      ),
-    );
+    final dialogBuilder = DialogBuilder(context);
+    final emailTyped = await dialogBuilder.showPasswordRecoveryDialog();
 
-    final emailTyped = recoveryEmailController.text.trim();
-
-    if (shouldSend != true || emailTyped.isEmpty) return;
+    if (emailTyped == null || emailTyped.isEmpty) return;
 
     // Validação
     final emailError = AppValidators.validateEmail(emailTyped);
@@ -136,9 +111,8 @@ class AuthFlowHelper {
 
     // Feedback
     if (viewModel.successMessage != null) {
-      showDialog(
-        context: context,
-        builder: (context) => AppDialog(
+      await dialogBuilder.show(
+        AppDialog(
           type: DialogType.success,
           title: "E-mail Enviado!",
           description: viewModel.successMessage,
@@ -150,9 +124,8 @@ class AuthFlowHelper {
         ),
       );
     } else if (viewModel.errorMessage != null) {
-      showDialog(
-        context: context,
-        builder: (context) => AppDialog(
+      await dialogBuilder.show(
+        AppDialog(
           type: DialogType.error,
           title: "Ocorreu um erro",
           description: viewModel.errorMessage,

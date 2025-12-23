@@ -1,33 +1,37 @@
 import 'package:flutter/material.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
+import '../../../core/utils/app_validators.dart'; 
 import '../common/app_dialog.dart';
 
 class AuthFlowHelper {
   
-  // --- LÓGICA DE LOGIN ---
+  // --- LOGIN ---
   static Future<void> login(
     BuildContext context, {
     required AuthViewModel viewModel,
     required String email,
     required String password,
   }) async {
-    FocusScope.of(context).unfocus();
+    FocusScope.of(context).unfocus(); 
     
-    // Validação Manual Inline
-    if (email.isEmpty || password.isEmpty) {
-      viewModel.setError("Preencha o e-mail e a senha.");
+    // 1. Validação (Usando o Utils)
+    final emailError = AppValidators.validateEmail(email);
+    final passError = AppValidators.validatePassword(password);
+
+    if (emailError != null) {
+      viewModel.setError(emailError);
+      return;
+    }
+    if (passError != null) {
+      viewModel.setError(passError);
       return;
     }
 
-    if (!email.contains('@')) {
-      viewModel.setError("Digite um e-mail válido.");
-      return;
-    }
-
+    // 2. Ação
     await viewModel.login(email, password);
   }
 
-  // --- LÓGICA DE CADASTRO ---
+  // --- CADASTRO ---
   static Future<void> register(
     BuildContext context, {
     required AuthViewModel viewModel,
@@ -38,24 +42,29 @@ class AuthFlowHelper {
   }) async {
     FocusScope.of(context).unfocus();
 
-    // Validação Manual Inline
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      viewModel.setError("Todos os campos são obrigatórios.");
+    // 1. Validação Centralizada
+    final nameError = AppValidators.validateName(name);
+    final emailError = AppValidators.validateEmail(email);
+    final passError = AppValidators.validatePassword(password);
+
+    // Verifica erros na ordem de prioridade
+    if (nameError != null) {
+      viewModel.setError(nameError);
+      return;
+    }
+    if (emailError != null) {
+      viewModel.setError(emailError);
+      return;
+    }
+    if (passError != null) {
+      viewModel.setError(passError);
       return;
     }
 
-    if (!email.contains('@')) {
-      viewModel.setError("E-mail inválido.");
-      return;
-    }
-
-    if (password.length < 6) {
-      viewModel.setError("A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
-
+    // 2. Ação
     await viewModel.register(email, password, name);
 
+    // 3. Feedback Visual (Se o widget ainda existir na tela)
     if (!context.mounted) return;
 
     if (viewModel.successMessage != null) {
@@ -76,7 +85,7 @@ class AuthFlowHelper {
     }
   }
 
-  // --- LÓGICA DE RECUPERAÇÃO DE SENHA ---
+  // --- RECUPERAÇÃO DE SENHA ---
   static Future<void> recoverPassword(
     BuildContext context, {
     required AuthViewModel viewModel,
@@ -84,12 +93,14 @@ class AuthFlowHelper {
     FocusScope.of(context).unfocus();
 
     final recoveryEmailController = TextEditingController();
+    
+    // Mostra Dialog para digitar o e-mail
     final shouldSend = await showDialog<bool>(
       context: context,
       builder: (context) => AppDialog(
         type: DialogType.info,
         title: "Recuperar Senha",
-        description: "Digite seu e-mail para receber o link de redefinição:",
+        description: "Digite seu e-mail para receber o link:",
         mainButtonText: "ENVIAR",
         secondaryButtonText: "CANCELAR",
         onMainAction: () => Navigator.pop(context, true),
@@ -111,15 +122,19 @@ class AuthFlowHelper {
 
     if (shouldSend != true || emailTyped.isEmpty) return;
 
-    if (!emailTyped.contains('@')) {
-      viewModel.setError("E-mail inválido para recuperação.");
+    // Validação
+    final emailError = AppValidators.validateEmail(emailTyped);
+    if (emailError != null) {
+      viewModel.setError(emailError);
       return;
     }
 
+    // Ação
     await viewModel.recoverPassword(emailTyped);
 
     if (!context.mounted) return;
 
+    // Feedback
     if (viewModel.successMessage != null) {
       showDialog(
         context: context,

@@ -6,7 +6,7 @@ class ChatMessage {
   final DateTime timestamp;
   final String? replyToMessageId;
   final String? replyToSenderName;
-  final String? replyToSenderId; // <--- NOVO CAMPO FUNDAMENTAL
+  final String? replyToSenderId; 
   final String? replyToText;
   final bool isDeleted;
 
@@ -18,7 +18,7 @@ class ChatMessage {
     required this.timestamp,
     this.replyToMessageId,
     this.replyToSenderName,
-    this.replyToSenderId, // <--- Adicione aqui
+    this.replyToSenderId, 
     this.replyToText,
     this.isDeleted = false,
   });
@@ -31,7 +31,7 @@ class ChatMessage {
       'timestamp': timestamp.toIso8601String(),
       'replyToMessageId': replyToMessageId,
       'replyToSenderName': replyToSenderName,
-      'replyToSenderId': replyToSenderId, // <--- Salva no banco
+      'replyToSenderId': replyToSenderId,
       'replyToText': replyToText,
       'isDeleted': isDeleted,
     };

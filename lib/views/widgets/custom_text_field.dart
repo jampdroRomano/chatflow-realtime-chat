@@ -26,7 +26,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   void initState() {
     super.initState();
-    // Only obscure if it IS a password
     _obscureText = widget.isPassword;
   }
 
@@ -41,8 +40,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
         decoration: InputDecoration(
           labelText: widget.label,
           prefixIcon: Icon(widget.icon),
-          
-          // Logic for the Eye Icon
           suffixIcon: widget.isPassword
               ? IconButton(
                   icon: Icon(

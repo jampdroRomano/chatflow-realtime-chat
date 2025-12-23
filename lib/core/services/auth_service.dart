@@ -3,38 +3,42 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  // Get current user
   User? get currentUser => _firebaseAuth.currentUser;
-
-  // Stream of auth changes
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  // Login
+  // LOGIN 
   Future<UserCredential> signIn(String email, String password) async {
-    return await _firebaseAuth.signInWithEmailAndPassword(
-      email: email, 
-      password: password
-    );
-  }
-
-  // Register (UPDATED to receive Name)
-  Future<UserCredential> signUp(String email, String password, String name) async {
-    // 1. Create account
-    UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+    UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(
       email: email, 
       password: password
     );
 
-    // 2. Update Display Name immediately
-    if (userCredential.user != null) {
-      await userCredential.user!.updateDisplayName(name);
-      await userCredential.user!.reload(); // Force refresh
+    // Verifica se o e-mail foi validado
+    if (userCredential.user != null && !userCredential.user!.emailVerified) {
+      await _firebaseAuth.signOut();
+      throw FirebaseAuthException(
+        code: 'email-not-verified', 
+        message: 'E-mail não verificado.'
+      );
     }
 
     return userCredential;
   }
 
-  // Logout
+  // CADASTRO 
+  Future<void> signUp(String email, String password, String name) async {
+    UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email, 
+      password: password
+    );
+
+    if (userCredential.user != null) {
+      await userCredential.user!.updateDisplayName(name);
+      await userCredential.user!.sendEmailVerification();
+      await _firebaseAuth.signOut();
+    }
+  }
+
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
   }

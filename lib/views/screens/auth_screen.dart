@@ -4,6 +4,7 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../widgets/auth/auth_header.dart';
 import '../widgets/auth/auth_form.dart';
 import '../widgets/auth/auth_actions.dart';
+import '../widgets/auth/auth_flow_helper.dart'; // <--- Importe o novo Helper
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -19,10 +20,21 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   void _toggleAuthMode() {
+    Provider.of<AuthViewModel>(context, listen: false).clearMessages();
     setState(() {
       _isLogin = !_isLogin;
-      Provider.of<AuthViewModel>(context, listen: false).errorMessage; 
+      _nameController.clear();
+      _emailController.clear();
+      _passwordController.clear();
     });
   }
 
@@ -44,8 +56,8 @@ class _AuthScreenState extends State<AuthScreen> {
               
               const SizedBox(height: 32),
 
-              // Mensagem de Erro
-              if (authViewModel.errorMessage != null)
+              // Erro Inline 
+              if (authViewModel.errorMessage != null && authViewModel.successMessage == null)
                 Container(
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 20),
@@ -65,7 +77,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 nameController: _nameController,
                 emailController: _emailController,
                 passwordController: _passwordController,
-                onForgotPassword: () => authViewModel.recoverPassword(_emailController.text),
+                onForgotPassword: () => AuthFlowHelper.recoverPassword(
+                  context, 
+                  viewModel: authViewModel
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -76,15 +91,20 @@ class _AuthScreenState extends State<AuthScreen> {
                 onToggleAuthMode: _toggleAuthMode,
                 onMainAction: () {
                   if (_isLogin) {
-                    authViewModel.login(
-                      _emailController.text.trim(),
-                      _passwordController.text.trim(),
+                    AuthFlowHelper.login(
+                      context,
+                      viewModel: authViewModel,
+                      email: _emailController.text.trim(),
+                      password: _passwordController.text.trim(),
                     );
                   } else {
-                    authViewModel.register(
-                      _emailController.text.trim(),
-                      _passwordController.text.trim(),
-                      _nameController.text.trim(),
+                    AuthFlowHelper.register(
+                      context,
+                      viewModel: authViewModel,
+                      email: _emailController.text.trim(),
+                      password: _passwordController.text.trim(),
+                      name: _nameController.text.trim(),
+                      onSuccess: _toggleAuthMode, 
                     );
                   }
                 },

@@ -3,8 +3,8 @@ import '../../models/message_model.dart';
 
 class ChatService {
   final DatabaseReference _messagesRef = FirebaseDatabase.instance.ref().child('messages');
+  final DatabaseReference _presenceRef = FirebaseDatabase.instance.ref().child('presence'); 
 
-  // Atualize a assinatura do método para aceitar o novo ID
   Future<void> sendMessage(
     String text, 
     String userId, 
@@ -12,7 +12,7 @@ class ChatService {
     {
       String? replyToMessageId, 
       String? replyToSenderName, 
-      String? replyToSenderId, // <--- Novo parâmetro
+      String? replyToSenderId,
       String? replyToText
     }
   ) async {
@@ -23,12 +23,12 @@ class ChatService {
       'timestamp': DateTime.now().toIso8601String(),
       'replyToMessageId': replyToMessageId,
       'replyToSenderName': replyToSenderName,
-      'replyToSenderId': replyToSenderId, // <--- Salva no banco
+      'replyToSenderId': replyToSenderId,
       'replyToText': replyToText,
       'isDeleted': false,
     });
   }
-// ... resto do arquivo (getMessagesStream e markMessageAsDeleted continuam iguais)
+
   Stream<List<ChatMessage>> getMessagesStream() {
     return _messagesRef.onValue.map((event) {
       final List<ChatMessage> messages = [];
@@ -47,6 +47,33 @@ class ChatService {
     await _messagesRef.child(messageId).update({
       'isDeleted': true,
       'text': '', 
+    });
+  }
+
+  // --- PRESENÇA (ONLINE) ---
+  Future<void> connectUser(String userId) async {
+    final userStatusRef = _presenceRef.child(userId);
+
+    FirebaseDatabase.instance.ref(".info/connected").onValue.listen((event) {
+      final connected = event.snapshot.value as bool? ?? false;
+      
+      if (connected) {
+        userStatusRef.onDisconnect().remove();
+        userStatusRef.set(true);
+      }
+    });
+  }
+
+  Future<void> disconnectUser(String userId) async {
+    await _presenceRef.child(userId).remove();
+  }
+
+  // Conta quantos filhos existem no nó 'presence' em tempo real
+  Stream<int> getOnlineUsersCountStream() {
+    return _presenceRef.onValue.map((event) {
+      if (event.snapshot.value == null) return 0;
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      return data.length;
     });
   }
 }

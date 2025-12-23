@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'auth_screen.dart'; // <--- UPDATED
-import 'chat_screen.dart'; 
+import 'auth_screen.dart';
+import 'chat_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -11,16 +11,16 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
-        if (snapshot.hasData) {
+        if (snapshot.hasData && snapshot.data!.emailVerified) {
           return const ChatScreen();
         }
 
-        // Now uses the unified screen
-        return const AuthScreen(); 
+        return const AuthScreen();
       },
     );
   }

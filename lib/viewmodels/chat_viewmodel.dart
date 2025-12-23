@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../core/services/chat_service.dart';
 import '../models/message_model.dart';
@@ -18,18 +19,39 @@ class ChatViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   final String currentUserId;
   final String currentUserName;
-  final String currentUserEmail; 
-
+  final String currentUserEmail;
   final Set<String> _selectedMessageIds = {};
   final List<ChatMessage> _selectedMessages = []; 
   
   ChatMessage? _replyingTo;
 
+  int _onlineUsersCount = 1; 
+  StreamSubscription<int>? _onlineUsersSubscription;
+
   ChatViewModel({
     required this.currentUserId, 
     required this.currentUserName,
-    required this.currentUserEmail, 
-  });
+    required this.currentUserEmail,
+  }) {
+    _initPresence();
+  }
+
+  void _initPresence() {
+
+    _chatService.connectUser(currentUserId);
+
+    _onlineUsersSubscription = _chatService.getOnlineUsersCountStream().listen((count) {
+      _onlineUsersCount = count;
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _onlineUsersSubscription?.cancel();
+    _chatService.disconnectUser(currentUserId);
+    super.dispose();
+  }
 
   Stream<List<ChatUiItem>> get messagesUiStream {
     return _chatService.getMessagesStream().map((rawMessages) {
@@ -74,8 +96,7 @@ class ChatViewModel extends ChangeNotifier {
   int get selectedCount => _selectedMessageIds.length;
   ChatMessage? get replyingTo => _replyingTo;
   List<ChatMessage> get selectedMessages => List.unmodifiable(_selectedMessages);
-  int get onlineUsersCount => 12;
-
+  int get onlineUsersCount => _onlineUsersCount;
   bool get canReply => _selectedMessageIds.length == 1;
   bool get canDelete {
     if (_selectedMessageIds.isEmpty) return false;

@@ -11,7 +11,6 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final chatVM = Provider.of<ChatViewModel>(context);
     final authVM = Provider.of<AuthViewModel>(context, listen: false);
-    final theme = Theme.of(context);
 
     if (chatVM.isSelectionMode) {
       return Theme(
@@ -53,9 +52,9 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             chatVM.headerStatusText, 
             style: TextStyle(
               fontSize: 12, 
-              color: chatVM.headerStatusText.contains("escrever") 
-                  ? theme.colorScheme.secondary 
-                  : Colors.green,
+              color: chatVM.headerStatusText.contains("a escrever") 
+                  ? AppTheme.successColor 
+                  : AppTheme.successColor,
               fontWeight: chatVM.headerStatusText.contains("escrever")
                   ? FontWeight.bold
                   : FontWeight.normal,

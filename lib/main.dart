@@ -2,18 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'core/theme/app_theme.dart';
 import 'viewmodels/auth_viewmodel.dart';
-import 'views/screens/auth_gate.dart';
-import 'core/theme/app_theme.dart'; 
+import 'views/screens/splash_screen.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ChatFlowApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
 }
 
-class ChatFlowApp extends StatelessWidget {
-  const ChatFlowApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +26,8 @@ class ChatFlowApp extends StatelessWidget {
       child: MaterialApp(
         title: 'ChatFlow',
         debugShowCheckedModeBanner: false,
-        
-        // APLICANDO O TEMA AQUI:
-        theme: AppTheme.lightTheme, 
-        
-        home: const AuthGate(),
+        theme: AppTheme.lightTheme,
+        home: const SplashScreen(),
       ),
     );
   }

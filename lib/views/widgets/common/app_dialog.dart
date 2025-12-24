@@ -50,23 +50,18 @@ class AppDialog extends StatelessWidget {
         break;
     }
 
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: Colors.white,
-      contentPadding: const EdgeInsets.all(24),
-      scrollable: true, 
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: headerColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+    return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: headerColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: headerColor, size: 48),
             ),
-            child: Icon(icon, color: headerColor, size: 48),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
           
           Text(
             title,
@@ -128,7 +123,6 @@ class AppDialog extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
+      );
   }
 }

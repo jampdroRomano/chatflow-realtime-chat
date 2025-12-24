@@ -4,6 +4,7 @@ import '../../models/message_model.dart';
 class ChatService {
   final DatabaseReference _messagesRef = FirebaseDatabase.instance.ref().child('messages');
   final DatabaseReference _presenceRef = FirebaseDatabase.instance.ref().child('presence'); 
+  final DatabaseReference _typingRef = FirebaseDatabase.instance.ref().child('typing');
 
   Future<void> sendMessage(
     String text, 
@@ -74,6 +75,35 @@ class ChatService {
       if (event.snapshot.value == null) return 0;
       final data = event.snapshot.value as Map<dynamic, dynamic>;
       return data.length;
+    });
+  }
+
+  // --- DIGITANDO (TYPING INDICATOR) ---
+  
+  // Define se o utilizador está a escrever ou não
+  Future<void> setTypingStatus(String userId, String userName, bool isTyping) async {
+    if (isTyping) {
+      await _typingRef.child(userId).set({'name': userName});
+      await _typingRef.child(userId).onDisconnect().remove();
+    } else {
+      await _typingRef.child(userId).remove();
+      await _typingRef.child(userId).onDisconnect().cancel();
+    }
+  }
+
+  // Escuta quem está a escrever em tempo real
+  Stream<List<Map<String, String>>> getTypingUsersStream() {
+    return _typingRef.onValue.map((event) {
+      final List<Map<String, String>> typingUsers = [];
+      if (event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          if (value is Map && value.containsKey('name')) {
+             typingUsers.add({'id': key, 'name': value['name']});
+          }
+        });
+      }
+      return typingUsers;
     });
   }
 }

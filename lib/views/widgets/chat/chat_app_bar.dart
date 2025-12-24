@@ -47,9 +47,18 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("ChatFlow"),
+          // MUDANÇA AQUI: Usa o texto dinâmico do ViewModel
           Text(
-            "${chatVM.onlineUsersCount} online",
-            style: const TextStyle(fontSize: 12, color: Colors.green),
+            chatVM.headerStatusText, 
+            style: TextStyle(
+              fontSize: 12, 
+              color: chatVM.headerStatusText.contains("a escrever") 
+                  ? AppTheme.successColor 
+                  : AppTheme.successColor,
+              fontWeight: chatVM.headerStatusText.contains("escrever")
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
           ),
         ],
       ),

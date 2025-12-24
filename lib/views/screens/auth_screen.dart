@@ -4,7 +4,8 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../widgets/auth/auth_header.dart';
 import '../widgets/auth/auth_form.dart';
 import '../widgets/auth/auth_actions.dart';
-import '../widgets/auth/auth_flow_helper.dart'; // <--- Importe o novo Helper
+import '../widgets/auth/auth_flow_helper.dart';
+import '../widgets/auth/auth_error_display.dart'; 
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -14,34 +15,30 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  bool _isLogin = true;
+  late final TextEditingController nameController;
+  late final TextEditingController emailController;
+  late final TextEditingController passwordController;
 
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController();
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
-  }
-
-  void _toggleAuthMode() {
-    Provider.of<AuthViewModel>(context, listen: false).clearMessages();
-    setState(() {
-      _isLogin = !_isLogin;
-      _nameController.clear();
-      _emailController.clear();
-      _passwordController.clear();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
-    final theme = Theme.of(context);
+    final isLogin = authViewModel.isLoginMode;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -52,31 +49,17 @@ class _AuthScreenState extends State<AuthScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AuthHeader(isLogin: _isLogin),
+              AuthHeader(isLogin: isLogin),
               
               const SizedBox(height: 32),
 
-              // Erro Inline 
-              if (authViewModel.errorMessage != null && authViewModel.successMessage == null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    authViewModel.errorMessage!,
-                    style: TextStyle(color: theme.colorScheme.error),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+              const AuthErrorDisplay(), 
 
               AuthForm(
-                isLogin: _isLogin,
-                nameController: _nameController,
-                emailController: _emailController,
-                passwordController: _passwordController,
+                isLogin: isLogin,
+                nameController: nameController,
+                emailController: emailController,
+                passwordController: passwordController,
                 onForgotPassword: () => AuthFlowHelper.recoverPassword(
                   context, 
                   viewModel: authViewModel
@@ -86,25 +69,30 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 24),
 
               AuthActions(
-                isLogin: _isLogin,
+                isLogin: isLogin,
                 isLoading: authViewModel.isLoading,
-                onToggleAuthMode: _toggleAuthMode,
+                onToggleAuthMode: () {
+                  authViewModel.toggleAuthMode();
+                  nameController.clear();
+                  emailController.clear();
+                  passwordController.clear();
+                },
                 onMainAction: () {
-                  if (_isLogin) {
+                  if (isLogin) {
                     AuthFlowHelper.login(
                       context,
                       viewModel: authViewModel,
-                      email: _emailController.text.trim(),
-                      password: _passwordController.text.trim(),
+                      email: emailController.text.trim(),
+                      password: passwordController.text.trim(),
                     );
                   } else {
                     AuthFlowHelper.register(
                       context,
                       viewModel: authViewModel,
-                      email: _emailController.text.trim(),
-                      password: _passwordController.text.trim(),
-                      name: _nameController.text.trim(),
-                      onSuccess: _toggleAuthMode, 
+                      email: emailController.text.trim(),
+                      password: passwordController.text.trim(),
+                      name: nameController.text.trim(),
+                      onSuccess: () => authViewModel.toggleAuthMode(), 
                     );
                   }
                 },

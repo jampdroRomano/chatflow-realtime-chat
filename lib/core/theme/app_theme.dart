@@ -6,6 +6,7 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF125DFF);
   static const Color secondaryColor = Color(0xFFF2F2F7);
   static const Color errorColor = Color(0xFFD32F2F);
+  static const Color successColor = Colors.green; 
   static const Color scaffoldBackground = Color(0xFFE5E5E5);
 
   // TEMA PADRÃO (Light)

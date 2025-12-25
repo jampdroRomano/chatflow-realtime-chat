@@ -14,34 +14,46 @@ class AuthGate extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         
-        // 1. Enquanto o Firebase verifica o estado, mostra carregando
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
-        // 2. Verifica se existe usuário logado
-        if (snapshot.hasData) {
-          final user = snapshot.data!;
-
-          // 3. AQUI ESTÁ A LÓGICA QUE VOCÊ QUER:
-          // Só entra se o e-mail estiver validado
+        if (snapshot.hasData && snapshot.data != null) {
+          User user = snapshot.data!;
           if (user.emailVerified) {
-            return ChangeNotifierProvider(
-              create: (_) => ChatViewModel(
-                currentUserId: user.uid,
-                currentUserName: user.displayName ?? 'Usuário',
-                currentUserEmail: user.email ?? '',
-              ),
-              child: const ChatScreen(),
-            );
+            return _buildChatScreen(user);
           }
-        }
 
-        // 4. Se não estiver logado OU e-mail não validado, manda para o Login
+          return FutureBuilder<void>(
+            future: user.reload(), 
+            builder: (context, reloadSnapshot) {
+              if (reloadSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final freshUser = FirebaseAuth.instance.currentUser;
+              if (freshUser != null && freshUser.emailVerified) {
+                return _buildChatScreen(freshUser);
+              }
+              return const AuthScreen();
+            },
+          );
+        }
         return const AuthScreen();
       },
+    );
+  }
+
+  Widget _buildChatScreen(User user) {
+    return ChangeNotifierProvider(
+      create: (_) => ChatViewModel(
+        currentUserId: user.uid,
+        currentUserName: user.displayName ?? 'Usuário',
+        currentUserEmail: user.email ?? '',
+      ),
+      child: const ChatScreen(),
     );
   }
 }

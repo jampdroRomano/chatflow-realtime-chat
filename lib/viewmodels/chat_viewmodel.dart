@@ -25,6 +25,10 @@ class ChatViewModel extends ChangeNotifier {
   int _onlineUsersCount = 1; 
   StreamSubscription<int>? _onlineUsersSubscription;
 
+  // --- LISTA DE MEMBROS ---
+  List<String> _onlineMemberNames = [];
+  StreamSubscription<List<String>>? _onlineMembersSubscription;
+
   ChatViewModel({
     required this.currentUserId, 
     required this.currentUserName,
@@ -43,9 +47,15 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   void _initPresence() {
-    _chatService.connectUser(currentUserId);
+    _chatService.connectUser(currentUserId, currentUserName);
+
     _onlineUsersSubscription = _chatService.getOnlineUsersCountStream().listen((count) {
       _onlineUsersCount = count;
+      notifyListeners();
+    });
+
+    _onlineMembersSubscription = _chatService.getOnlineUserNamesStream().listen((names) {
+      _onlineMemberNames = names;
       notifyListeners();
     });
 
@@ -55,12 +65,13 @@ class ChatViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _onlineUsersSubscription?.cancel();
+    _onlineMembersSubscription?.cancel(); // Cancelar listener de nomes
     _typingManager.dispose();
     _chatService.disconnectUser(currentUserId);
     super.dispose();
   }
 
-  // --- GETTERS (Delegando para os Managers) ---
+  // --- GETTERS ---
   String get headerStatusText => _typingManager.getHeaderStatusText(_onlineUsersCount);
   
   bool get isSelectionMode => _selectionManager.isSelectionMode;
@@ -70,10 +81,11 @@ class ChatViewModel extends ChangeNotifier {
   bool get canReply => _selectionManager.canReply;
   bool get canDelete => _selectionManager.canDelete(currentUserId);
   int get onlineUsersCount => _onlineUsersCount;
+  List<String> get onlineMemberNames => _onlineMemberNames; // Getter da lista de nomes
 
   bool isMessageSelected(String id) => _selectionManager.isSelected(id);
 
-  // --- ACTIONS (Delegando) ---
+  // --- ACTIONS ---
   
   void onTextChanged(String text) => _typingManager.onTextChanged(text);
 

@@ -123,6 +123,10 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reactToMessage(ChatMessage message, String reaction) async {
+    await _chatService.toggleReaction(message.id, currentUserId, reaction);
+    notifyListeners();
+  }
 
   Future<void> deleteSelectedMessages() async {
     if (!canDelete) return;

@@ -5,6 +5,7 @@ class ChatService {
   final DatabaseReference _messagesRef = FirebaseDatabase.instance.ref().child('messages');
   final DatabaseReference _presenceRef = FirebaseDatabase.instance.ref().child('presence'); 
   final DatabaseReference _typingRef = FirebaseDatabase.instance.ref().child('typing');
+  
 
   Future<void> sendMessage(
     String text, 
@@ -28,6 +29,18 @@ class ChatService {
       'replyToText': replyToText,
       'isDeleted': false,
     });
+  }
+
+  // --- REAÇÕES ---
+  Future<void> toggleReaction(String messageId, String userId, String reaction) async {
+    final reactionRef = _messagesRef.child(messageId).child('reactions').child(userId);
+    final snapshot = await reactionRef.get();
+    
+    if (snapshot.exists && snapshot.value == reaction) {
+      await reactionRef.remove();
+    } else {
+      await reactionRef.set(reaction);
+    }
   }
 
   Stream<List<ChatMessage>> getMessagesStream() {

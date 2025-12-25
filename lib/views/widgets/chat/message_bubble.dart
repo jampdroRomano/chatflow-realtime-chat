@@ -35,19 +35,20 @@ class MessageBubble extends StatefulWidget {
 }
 
 class _MessageBubbleState extends State<MessageBubble> {
-  // Para guardar onde o usuário tocou
   Offset _tapPosition = Offset.zero;
 
   void _showReactionPicker(BuildContext context) {
     final viewModel = Provider.of<ChatViewModel>(context, listen: false);
-    
+
     showDialog(
       context: context,
-      barrierColor: Colors.transparent, 
+      barrierColor: Colors.transparent,
       builder: (context) => ReactionPickerDialog(
         tapPosition: _tapPosition,
         onDismiss: () => Navigator.of(context).pop(),
         onReactionSelected: (reaction) {
+          FocusScope.of(context).unfocus(); 
+          
           viewModel.reactToMessage(widget.message, reaction);
           Navigator.of(context).pop();
         },
@@ -75,7 +76,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     return Container(
       color: rowColor,
       child: Stack(
-        clipBehavior: Clip.none, 
+        clipBehavior: Clip.none,
         children: [
           Dismissible(
             key: Key(widget.message.id),
@@ -106,6 +107,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                   padding: EdgeInsets.only(
                     top: 2, 
                     bottom: 12, 
+                    left: widget.isMe ? 64 : 16,
                     right: widget.isMe ? 16 : 64,
                   ),
                   child: ConstrainedBox(
@@ -166,8 +168,8 @@ class _MessageBubbleState extends State<MessageBubble> {
           ),
 
           Positioned(
-            bottom: -4,
-            right: widget.isMe ? 24 : null,
+            bottom: -4, 
+            right: widget.isMe ? 24 : null, 
             left: widget.isMe ? null : 24,  
             child: MessageReactionsDisplay(
               message: widget.message,

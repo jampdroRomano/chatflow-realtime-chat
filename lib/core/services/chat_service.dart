@@ -65,7 +65,7 @@ class ChatService {
   }
 
   // --- PRESENÇA (ONLINE) ---
-  Future<void> connectUser(String userId) async {
+  Future<void> connectUser(String userId, String userName) async {
     final userStatusRef = _presenceRef.child(userId);
 
     FirebaseDatabase.instance.ref(".info/connected").onValue.listen((event) {
@@ -73,7 +73,7 @@ class ChatService {
       
       if (connected) {
         userStatusRef.onDisconnect().remove();
-        userStatusRef.set(true);
+        userStatusRef.set({'name': userName, 'last_seen': ServerValue.timestamp});
       }
     });
   }
@@ -82,7 +82,6 @@ class ChatService {
     await _presenceRef.child(userId).remove();
   }
 
-  // Conta quantos filhos existem no nó 'presence' em tempo real
   Stream<int> getOnlineUsersCountStream() {
     return _presenceRef.onValue.map((event) {
       if (event.snapshot.value == null) return 0;
@@ -91,9 +90,22 @@ class ChatService {
     });
   }
 
+  Stream<List<String>> getOnlineUserNamesStream() {
+    return _presenceRef.onValue.map((event) {
+      if (event.snapshot.value == null) return [];
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      
+      return data.values.map((value) {
+        if (value is Map && value.containsKey('name')) {
+          return value['name'].toString();
+        }
+        return 'Desconhecido';
+      }).toList();
+    });
+  }
+
   // --- DIGITANDO (TYPING INDICATOR) ---
   
-  // Define se o utilizador está a escrever ou não
   Future<void> setTypingStatus(String userId, String userName, bool isTyping) async {
     if (isTyping) {
       await _typingRef.child(userId).set({'name': userName});

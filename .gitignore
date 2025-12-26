@@ -47,7 +47,6 @@ app.*.map.json
 # Firebase & FlutterFire
 .firebase/
 firebase-debug.log
-android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 
 # VS Code settings (opcional, mas bom pra não sujar o repo)

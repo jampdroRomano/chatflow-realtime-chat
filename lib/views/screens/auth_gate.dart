@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/chat_viewmodel.dart';
-import '../../viewmodels/auth_viewmodel.dart'; // Importe o AuthViewModel
+import '../../viewmodels/auth_viewmodel.dart';
 import 'auth_screen.dart';
 import 'chat_screen.dart';
 
@@ -11,46 +11,51 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  
-    final authViewModel = Provider.of<AuthViewModel>(context);
+    return Selector<AuthViewModel, bool>(
+      selector: (_, viewModel) => viewModel.isLoading,
+      builder: (context, isLoading, child) {
 
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-    
-        if (authViewModel.isLoading) {
-          return const AuthScreen();
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        
-        if (snapshot.hasData && snapshot.data != null) {
-          User user = snapshot.data!;
-          if (user.emailVerified) {
-            return _buildChatScreen(user);
-          }
-
-          return FutureBuilder<void>(
-            future: user.reload(), 
-            builder: (context, reloadSnapshot) {
-              if (reloadSnapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-              final freshUser = FirebaseAuth.instance.currentUser;
-              if (freshUser != null && freshUser.emailVerified) {
-                return _buildChatScreen(freshUser);
-              }
+        return StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+          
+            if (isLoading) {
               return const AuthScreen();
-            },
-          );
-        }
-        return const AuthScreen();
+            }
+
+            // 2. Lógica normal de autenticação
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            
+            if (snapshot.hasData && snapshot.data != null) {
+              User user = snapshot.data!;
+              if (user.emailVerified) {
+                return _buildChatScreen(user);
+              }
+
+              return FutureBuilder<void>(
+                future: user.reload(), 
+                builder: (context, reloadSnapshot) {
+                  if (reloadSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  final freshUser = FirebaseAuth.instance.currentUser;
+                  if (freshUser != null && freshUser.emailVerified) {
+                    return _buildChatScreen(freshUser);
+                  }
+                  return const AuthScreen();
+                },
+              );
+            }
+            
+            return const AuthScreen();
+          },
+        );
       },
     );
   }

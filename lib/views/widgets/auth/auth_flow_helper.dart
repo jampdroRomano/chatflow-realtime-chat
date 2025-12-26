@@ -64,7 +64,7 @@ class AuthFlowHelper {
 
     if (viewModel.successMessage != null) {
       final dialogBuilder = DialogBuilder(context);
-
+      
       await dialogBuilder.show(
         AppDialog(
           type: DialogType.success,
@@ -73,6 +73,7 @@ class AuthFlowHelper {
           mainButtonText: "IR PARA LOGIN",
         ),
       );
+      
       onSuccess(); 
     }
   }
@@ -106,12 +107,10 @@ class AuthFlowHelper {
           title: "E-mail Enviado!",
           description: viewModel.successMessage,
           mainButtonText: "ENTENDI",
-          onMainAction: () {
-             viewModel.clearMessages();
-             Navigator.pop(context); 
-          },
         ),
       );
+      
+      viewModel.clearMessages();
       
     } else if (viewModel.errorMessage != null) {
       await dialogBuilder.show(

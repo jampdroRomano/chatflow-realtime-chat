@@ -64,7 +64,7 @@ chatflow-realtime-chat/
 
 ## 🔥 Configuração do Firebase
 
-O projeto utiliza o pacote `flutterfire_cli` para configuração. As credenciais específicas para já estão configuradas no arquivo `lib/firebase_options.dart`.
+O projeto utiliza o pacote `flutterfire_cli` para configuração. As credenciais específicas já estão configuradas no arquivo `lib/firebase_options.dart`.
 
 > **Nota de Segurança:** O arquivo `google-services.json` (Android) e `GoogleService-Info.plist` (iOS) foram **commitados intencionalmente** neste repositório. O objetivo é facilitar a execução e evitar a configuração de um projeto Firebase próprio.
 >

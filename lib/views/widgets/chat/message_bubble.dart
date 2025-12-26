@@ -72,6 +72,7 @@ class _MessageBubbleState extends State<MessageBubble> {
         : theme.colorScheme.onSurface.withValues(alpha: 0.6);
 
     final bool isShortMessage = widget.message.text.length < 25 && !widget.message.text.contains('\n');
+    final bool hasReactions = widget.message.reactions.isNotEmpty;
 
     return Container(
       color: rowColor,
@@ -106,7 +107,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                 child: Padding(
                   padding: EdgeInsets.only(
                     top: 2, 
-                    bottom: 12, 
+                    bottom: hasReactions ? 12 : 2, 
                     left: widget.isMe ? 64 : 16,
                     right: widget.isMe ? 16 : 64,
                   ),
@@ -167,15 +168,16 @@ class _MessageBubbleState extends State<MessageBubble> {
             ),
           ),
 
-          Positioned(
-            bottom: -4, 
-            right: widget.isMe ? 24 : null, 
-            left: widget.isMe ? null : 24,  
-            child: MessageReactionsDisplay(
-              message: widget.message,
-              isMe: widget.isMe,
+          if (hasReactions)
+            Positioned(
+              bottom: -4, 
+              right: widget.isMe ? 24 : null, 
+              left: widget.isMe ? null : 24,  
+              child: MessageReactionsDisplay(
+                message: widget.message,
+                isMe: widget.isMe,
+              ),
             ),
-          ),
         ],
       ),
     );

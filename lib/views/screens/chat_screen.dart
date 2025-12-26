@@ -8,6 +8,7 @@ import '../widgets/chat/message_bubble.dart';
 import '../widgets/chat/date_separator.dart';
 import '../widgets/chat/chat_input_field.dart';
 import '../widgets/chat/reply_preview_bar.dart';
+import '../widgets/chat/scroll_to_bottom_button.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -18,11 +19,36 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool _showScrollToBottomButton = false;
 
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('pt_BR', null);
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.offset > 300) {
+      if (!_showScrollToBottomButton) {
+        setState(() {
+          _showScrollToBottomButton = true;
+        });
+      }
+    } else {
+      if (_showScrollToBottomButton) {
+        setState(() {
+          _showScrollToBottomButton = false;
+        });
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -51,66 +77,81 @@ class _ChatScreenState extends State<ChatScreen> {
           return Scaffold(
             backgroundColor: backgroundColor,
             appBar: const ChatAppBar(),
-            body: Column(
+            body: Stack(
               children: [
-                Expanded(
-                  child: StreamBuilder<List<ChatUiItem>>(
-                    stream: viewModel.messagesUiStream,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                      
-                      final uiItems = snapshot.data!;
-                      
-                      return ListView.builder(
-                        controller: _scrollController,
-                        reverse: true,
-                        itemCount: uiItems.length,
-                        padding: const EdgeInsets.only(bottom: 10, top: 10),
-                        itemBuilder: (context, index) {
-                          final item = uiItems[index];
-                          final message = item.message;
-                          final isMe = message.senderId == currentUser.uid;
-                          final isSelected = viewModel.isMessageSelected(message.id);
-
-                          return Column(
-                            children: [
-                              if (item.showDate) 
-                                DateSeparator(date: message.timestamp),
-                              
-                              MessageBubble(
-                                message: message,
-                                currentUserId: currentUser.uid,
-                                isMe: isMe,
-                                showTail: item.showTail,
-                                isSelected: isSelected,
-                                onLongPress: () => viewModel.toggleSelection(message),
-                                onTap: () {
-                                  if (viewModel.isSelectionMode) {
-                                    viewModel.toggleSelection(message);
-                                  }
-                                },
-                                onSwipeReply: () => viewModel.setReplyingTo(message),
-                              ),
-                            ],
+                Column(
+                  children: [
+                    Expanded(
+                      child: StreamBuilder<List<ChatUiItem>>(
+                        stream: viewModel.messagesUiStream,
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                          
+                          final uiItems = snapshot.data!;
+                          
+                          return ListView.builder(
+                            controller: _scrollController,
+                            reverse: true,
+                            itemCount: uiItems.length,
+                            padding: const EdgeInsets.only(bottom: 10, top: 10),
+                            itemBuilder: (context, index) {
+                              final item = uiItems[index];
+                              final message = item.message;
+                              final isMe = message.senderId == currentUser.uid;
+                              final isSelected = viewModel.isMessageSelected(message.id);
+    
+                              return Column(
+                                children: [
+                                  if (item.showDate) 
+                                    DateSeparator(date: message.timestamp),
+                                  
+                                  MessageBubble(
+                                    message: message,
+                                    currentUserId: currentUser.uid,
+                                    isMe: isMe,
+                                    showTail: item.showTail,
+                                    isSelected: isSelected,
+                                    onLongPress: () => viewModel.toggleSelection(message),
+                                    onTap: () {
+                                      if (viewModel.isSelectionMode) {
+                                        viewModel.toggleSelection(message);
+                                      }
+                                    },
+                                    onSwipeReply: () => viewModel.setReplyingTo(message),
+                                  ),
+                                ],
+                              );
+                            },
                           );
                         },
-                      );
-                    },
+                      ),
+                    ),
+    
+                    if (viewModel.replyingTo != null)
+                      ReplyPreviewBar(
+                        replyingTo: viewModel.replyingTo!,
+                        currentUserId: currentUser.uid,
+                        onCancel: viewModel.cancelReply,
+                      ),
+    
+                    ChatInput(
+                      onSendMessageSuccess: _scrollToBottom,
+                    ),
+                    
+                    SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 10 : 0),
+                  ],
+                ),
+                Positioned(
+                  bottom: (viewModel.replyingTo != null ? 120 : 70) + MediaQuery.of(context).padding.bottom,
+                  right: 16,
+                  child: AnimatedOpacity(
+                    opacity: _showScrollToBottomButton ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: _showScrollToBottomButton 
+                        ? ScrollToBottomButton(onPressed: _scrollToBottom) 
+                        : const SizedBox.shrink(),
                   ),
                 ),
-
-                if (viewModel.replyingTo != null)
-                  ReplyPreviewBar(
-                    replyingTo: viewModel.replyingTo!,
-                    currentUserId: currentUser.uid,
-                    onCancel: viewModel.cancelReply,
-                  ),
-
-                ChatInput(
-                  onSendMessageSuccess: _scrollToBottom,
-                ),
-                
-                SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 10 : 0),
               ],
             ),
           );

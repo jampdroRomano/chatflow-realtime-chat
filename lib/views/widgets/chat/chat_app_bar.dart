@@ -65,29 +65,25 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       // Título Clicável
-      title: InkWell(
-        onTap: () => _showMembersList(context), 
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("ChatFlow"),
-              Text(
-                chatVM.headerStatusText, 
-                style: TextStyle(
-                  fontSize: 12, 
-                  color: chatVM.headerStatusText.contains("escrever") 
-                      ? theme.colorScheme.secondary 
-                      : Colors.green,
-                  fontWeight: chatVM.headerStatusText.contains("escrever")
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
+      title: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("ChatFlow"),
+            Text(
+              chatVM.headerStatusText,
+              style: TextStyle(
+                fontSize: 12,
+                color: chatVM.headerStatusText.contains("escrever")
+                    ? theme.colorScheme.secondary
+                    : Colors.green,
+                fontWeight: chatVM.headerStatusText.contains("escrever")
+                    ? FontWeight.bold
+                    : FontWeight.normal,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       actions: [

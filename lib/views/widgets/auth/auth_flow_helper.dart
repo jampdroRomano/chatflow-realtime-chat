@@ -15,7 +15,6 @@ class AuthFlowHelper {
   }) async {
     FocusScope.of(context).unfocus(); 
     
-    // 1. Validação (Usando o Utils)
     final emailError = AppValidators.validateEmail(email);
     final passError = AppValidators.validatePassword(password);
 
@@ -28,7 +27,6 @@ class AuthFlowHelper {
       return;
     }
 
-    // 2. Ação
     await viewModel.login(email, password);
   }
 
@@ -43,12 +41,10 @@ class AuthFlowHelper {
   }) async {
     FocusScope.of(context).unfocus();
 
-    // 1. Validação Centralizada
     final nameError = AppValidators.validateName(name);
     final emailError = AppValidators.validateEmail(email);
     final passError = AppValidators.validatePassword(password);
 
-    // Verifica erros na ordem de prioridade
     if (nameError != null) {
       viewModel.setError(nameError);
       return;
@@ -62,26 +58,22 @@ class AuthFlowHelper {
       return;
     }
 
-    // 2. Ação
     await viewModel.register(email, password, name);
 
-    // 3. Feedback Visual 
     if (!context.mounted) return;
 
     if (viewModel.successMessage != null) {
       final dialogBuilder = DialogBuilder(context);
+
       await dialogBuilder.show(
         AppDialog(
           type: DialogType.success,
           title: "Conta Criada!",
           description: viewModel.successMessage,
           mainButtonText: "IR PARA LOGIN",
-          onMainAction: () {
-            Navigator.pop(context); 
-            onSuccess(); 
-          },
         ),
       );
+      onSuccess(); 
     }
   }
 
@@ -97,19 +89,16 @@ class AuthFlowHelper {
 
     if (emailTyped == null || emailTyped.isEmpty) return;
 
-    // Validação
     final emailError = AppValidators.validateEmail(emailTyped);
     if (emailError != null) {
       viewModel.setError(emailError);
       return;
     }
 
-    // Ação
     await viewModel.recoverPassword(emailTyped);
 
     if (!context.mounted) return;
 
-    // Feedback
     if (viewModel.successMessage != null) {
       await dialogBuilder.show(
         AppDialog(
@@ -118,11 +107,12 @@ class AuthFlowHelper {
           description: viewModel.successMessage,
           mainButtonText: "ENTENDI",
           onMainAction: () {
-            viewModel.clearMessages();
-            Navigator.pop(context);
+             viewModel.clearMessages();
+             Navigator.pop(context); 
           },
         ),
       );
+      
     } else if (viewModel.errorMessage != null) {
       await dialogBuilder.show(
         AppDialog(
